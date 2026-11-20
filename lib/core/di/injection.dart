@@ -15,7 +15,10 @@ List<SingleChildWidget> createAppProviders(AppDatabase database) {
   final watchTasksUseCase = WatchTasksUseCase(taskRepository);
 
   return [
-    Provider<AppDatabase>.value(value: database),
+    Provider<AppDatabase>(
+      create: (_) => database,
+      dispose: (_, db) => db.close(),
+    ),
     Provider<domain.TaskRepository>.value(value: taskRepository),
     Provider<WatchTasksUseCase>.value(value: watchTasksUseCase),
     ChangeNotifierProvider<TaskListController>(
