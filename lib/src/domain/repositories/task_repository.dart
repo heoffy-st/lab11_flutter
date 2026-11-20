@@ -6,10 +6,10 @@ abstract class TaskRepository {
     String? status,
     String? priority,
     int? assigneeId,
-    String query,
-    bool trash,
-    bool sortByDeadline,
-    int limit,
-    int offset,
+    String query = '',
+    bool trash = false,
+    bool sortByDeadline = false,
+    int limit = 30,
+    int offset = 0,
   });
 }
