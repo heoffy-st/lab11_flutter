@@ -25,49 +25,49 @@ class TaskRepositoryImpl implements TaskRepository {
   Future<int> createTask({required String title, required String description, required int projectId, int? assigneeId, String priority = 'medium', String status = 'todo', int? deadline, int? changedBy}) async {
     try {
       return await localDataSource.createTask(title: title, description: description, projectId: projectId, assigneeId: assigneeId, priority: priority, status: status, deadline: deadline, changedBy: changedBy);
-    } catch (error) { throw ErrorMapper.toFailure(error); }
+    } catch (error) { throw ErrorMapper.toDataFailure(error); }
   }
 
   @override
   Future<void> updateTask(int id, {required String title, required String description, required String priority, int? deadline}) async {
     try { await localDataSource.updateTask(id, title: title, description: description, priority: priority, deadline: deadline); }
-    catch (error) { throw ErrorMapper.toFailure(error); }
+    catch (error) { throw ErrorMapper.toDataFailure(error); }
   }
 
   @override
   Future<void> changeStatus(int taskId, String next, {int? changedBy}) async {
     try { await localDataSource.changeStatus(taskId, next, changedBy: changedBy); }
-    catch (error) { throw ErrorMapper.toFailure(error); }
+    catch (error) { throw ErrorMapper.toDataFailure(error); }
   }
 
   @override
   Future<void> softDeleteTask(int id) async {
     try { await localDataSource.softDeleteTask(id); }
-    catch (error) { throw ErrorMapper.toFailure(error); }
+    catch (error) { throw ErrorMapper.toDataFailure(error); }
   }
 
   @override
   Future<void> reassignTask(int taskId, int? userId, {int? changedBy}) async {
     try { await localDataSource.reassignTask(taskId, userId, changedBy: changedBy); }
-    catch (error) { throw ErrorMapper.toFailure(error); }
+    catch (error) { throw ErrorMapper.toDataFailure(error); }
   }
 
   @override
   Future<void> undoStatus(int taskId, {int? changedBy}) async {
     try { await localDataSource.undoStatus(taskId, changedBy: changedBy); }
-    catch (error) { throw ErrorMapper.toFailure(error); }
+    catch (error) { throw ErrorMapper.toDataFailure(error); }
   }
 
   @override
   Future<void> restoreTask(int id) async {
     try { await localDataSource.restoreTask(id); }
-    catch (error) { throw ErrorMapper.toFailure(error); }
+    catch (error) { throw ErrorMapper.toDataFailure(error); }
   }
 
   @override
   Future<void> permanentlyDeleteTask(int id) async {
     try { await localDataSource.permanentlyDeleteTask(id); }
-    catch (error) { throw ErrorMapper.toFailure(error); }
+    catch (error) { throw ErrorMapper.toDataFailure(error); }
   }
 
 }
