@@ -32,8 +32,8 @@
 ### 2. Склонируйте репозиторий
 
 ```bash
-git clone https://github.com/heoffy-st/lab10_flutter.git
-cd lab10_flutter
+git clone https://github.com/heoffy-st/lab11_flutter.git
+cd lab11_flutter
 ```
 
 ### 3. Установите зависимости
@@ -43,6 +43,8 @@ flutter pub get
 ```
 
 ### 4. Сгенерируйте файлы Drift
+
+Этот шаг обязателен: Drift создаёт файл `app_database.g.dart`, в котором находятся методы и типы базы данных. Без него проект не соберётся.
 
 ```bash
 dart run build_runner build --delete-conflicting-outputs
@@ -90,4 +92,4 @@ GitHub: https://github.com/heoffy-st
 
 ---
 
-Исходный код проекта: https://github.com/heoffy-st/lab10_flutter
+Исходный код проекта: https://github.com/heoffy-st/lab11_flutter
