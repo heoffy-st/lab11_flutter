@@ -1,10 +1,13 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+import '../core/error/failures.dart';
 import '../data/task_repository.dart';
 import '../database/app_database.dart';
 import '../src/presentation/providers/task_list_controller.dart';
 import '../src/presentation/providers/task_list_state.dart';
+import '../src/domain/entities/task_entity.dart';
 import 'taskflow_app.dart';
 
 class TasksScreen extends StatefulWidget {
@@ -175,21 +178,7 @@ class _TasksScreenState extends State<TasksScreen> {
               );
             }
             final item = tasks[index];
-            return TaskCard(
-              task: Task(
-                id: item.id,
-                title: item.title,
-                description: item.description,
-                projectId: item.projectId,
-                assigneeId: item.assigneeId,
-                priority: item.priority,
-                status: item.status,
-                deadline: item.deadline,
-                createdAt: item.createdAt,
-                updatedAt: item.updatedAt,
-                deletedAt: item.deletedAt,
-              ),
-            );
+            return TaskCard(task: item);
           },
         );
     }
@@ -197,7 +186,7 @@ class _TasksScreenState extends State<TasksScreen> {
 }
 
 class TaskCard extends StatelessWidget {
-  final Task task;
+  final TaskEntity task;
   const TaskCard({super.key, required this.task});
   @override
   Widget build(BuildContext context) {
@@ -246,12 +235,12 @@ Future<void> createTaskDialog(BuildContext context) async {
     actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Отмена')), FilledButton(onPressed: () async { try { await taskController.createTask(title: title.text, description: desc.text, projectId: projectId, assigneeId: userId, priority: priority, deadline: deadline?.millisecondsSinceEpoch, changedBy: users.isEmpty ? null : users.first.id); if (ctx.mounted) Navigator.pop(ctx); } catch (e) { if (ctx.mounted) showError(ctx, e); } }, child: const Text('Создать'))],
   )));
 }
-Future<void> editTaskDialog(BuildContext context, Task task) async {
+Future<void> editTaskDialog(BuildContext context, TaskEntity task) async {
   final repo = context.read<TaskRepository>(); final taskController = context.read<TaskListController>(); final title = TextEditingController(text: task.title); final desc = TextEditingController(text: task.description); String priority = task.priority; DateTime? deadline = task.deadline == null ? null : DateTime.fromMillisecondsSinceEpoch(task.deadline!);
   await showDialog(context: context, builder: (ctx) => StatefulBuilder(builder: (ctx,set) => AlertDialog(title: const Text('Редактировать задачу'), content: Column(mainAxisSize: MainAxisSize.min, children: [TextField(controller:title,decoration:const InputDecoration(labelText:'Название')),TextField(controller:desc,decoration:const InputDecoration(labelText:'Описание'),maxLines:3),DropdownButtonFormField<String>(initialValue:priority,items:const [DropdownMenuItem(value:'low',child:Text('Низкий')),DropdownMenuItem(value:'medium',child:Text('Средний')),DropdownMenuItem(value:'high',child:Text('Высокий')),DropdownMenuItem(value:'critical',child:Text('Критический'))],onChanged:(v)=>set(()=>priority=v??'medium')),TextButton(onPressed:() async { final d=await showDatePicker(context:ctx,firstDate:DateTime.now().subtract(const Duration(days:1)),lastDate:DateTime.now().add(const Duration(days:3650)),initialDate:deadline??DateTime.now()); if(d!=null)set(()=>deadline=d); },child:Text(deadline?.toString().substring(0,10)??'Дедлайн не задан'))]),actions:[TextButton(onPressed:()=>Navigator.pop(ctx),child:const Text('Отмена')),FilledButton(onPressed:() async {try{await taskController.updateTask(task.id,title:title.text,description:desc.text,priority:priority,deadline:deadline?.millisecondsSinceEpoch);if(ctx.mounted)Navigator.pop(ctx);}catch(e){if(ctx.mounted)showError(ctx,e);}},child:const Text('Сохранить'))])));
 }
 
-Future<void> showTaskDetails(BuildContext context, Task task) async {
+Future<void> showTaskDetails(BuildContext context, TaskEntity task) async {
   final repo = context.read<TaskRepository>(); final comment = TextEditingController();
   final users = await repo.watchUsers().first; if (!context.mounted) return;
   int authorId = users.isEmpty ? 0 : users.first.id;
@@ -447,13 +436,62 @@ class StatTile extends StatelessWidget {
 
 class TrashScreen extends StatelessWidget {
   const TrashScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
-    final repo=context.read<TaskRepository>();
-    final controller=context.read<TaskListController>();
-    return StreamBuilder<List<Task>>(stream:repo.watchTasks(trash:true),builder:(ctx,s){if(!s.hasData)return const Center(child:CircularProgressIndicator());if(s.data!.isEmpty)return const Center(child:Text('Корзина пуста'));return ListView(children:s.data!.map((t)=>Card(child:ListTile(title:Text(t.title),subtitle:Text(t.description),trailing:Wrap(children:[IconButton(tooltip:'Восстановить',icon:const Icon(Icons.restore),onPressed:()async{try{await controller.restoreTask(t.id);}catch(e){if(ctx.mounted)showError(ctx,e);}}),IconButton(tooltip:'Удалить навсегда',icon:const Icon(Icons.delete_forever),onPressed:()async{try{await controller.permanentlyDeleteTask(t.id);}catch(e){if(ctx.mounted)showError(ctx,e);}})])))).toList());});
+    final controller = context.read<TaskListController>();
+    return StreamBuilder<List<TaskEntity>>(
+      stream: controller.watchTrashTasks(),
+      builder: (ctx, snapshot) {
+        if (!snapshot.hasData) {
+          if (snapshot.hasError) {
+            return Center(child: Text(const UnknownFailure().message));
+          }
+          return const Center(child: CircularProgressIndicator());
+        }
+        final tasks = snapshot.data!;
+        if (tasks.isEmpty) {
+          return const Center(child: Text('Корзина пуста'));
+        }
+        return ListView(
+          children: tasks.map((task) => Card(
+            child: ListTile(
+              title: Text(task.title),
+              subtitle: Text(task.description),
+              trailing: Wrap(
+                children: [
+                  IconButton(
+                    tooltip: 'Восстановить',
+                    icon: const Icon(Icons.restore),
+                    onPressed: () async {
+                      try {
+                        await controller.restoreTask(task.id);
+                      } catch (error) {
+                        if (ctx.mounted) showError(ctx, error);
+                      }
+                    },
+                  ),
+                  IconButton(
+                    tooltip: 'Удалить навсегда',
+                    icon: const Icon(Icons.delete_forever),
+                    onPressed: () async {
+                      try {
+                        await controller.permanentlyDeleteTask(task.id);
+                      } catch (error) {
+                        if (ctx.mounted) showError(ctx, error);
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
+          )).toList(),
+        );
+      },
+    );
   }
 }
+
 
 
 Future<int?> chooseProject(BuildContext context, List<Project> projects, {int? selectedId}) {
@@ -522,7 +560,7 @@ Future<void> showUserTasks(BuildContext context, User user) async {
   await showDialog(context:context,builder:(ctx)=>AlertDialog(title:Text('Задачи: ${user.name}'),content:SizedBox(width:420,height:400,child:StreamBuilder<List<Task>>(stream:repo.watchTasks(assigneeId:user.id),builder:(ctx,s){if(!s.hasData)return const Center(child:CircularProgressIndicator());if(s.data!.isEmpty)return const Center(child:Text('Назначенных задач нет'));return ListView(children:s.data!.map((t)=>ListTile(title:Text(t.title),subtitle:Text(t.status))).toList());})),actions:[TextButton(onPressed:()=>Navigator.pop(ctx),child:const Text('Закрыть'))]));
 }
 
-Future<void> reassignTaskDialog(BuildContext context, Task task) async {
+Future<void> reassignTaskDialog(BuildContext context, TaskEntity task) async {
   final repo=context.read<TaskRepository>();
   final taskController=context.read<TaskListController>();
   final members=await repo.projectMembers(task.projectId);
