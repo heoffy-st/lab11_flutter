@@ -9,6 +9,10 @@ import '../../domain/usecases/create_task_usecase.dart';
 import '../../domain/usecases/update_task_usecase.dart';
 import '../../domain/usecases/change_task_status_usecase.dart';
 import '../../domain/usecases/delete_task_usecase.dart';
+import '../../domain/usecases/reassign_task_usecase.dart';
+import '../../domain/usecases/undo_task_status_usecase.dart';
+import '../../domain/usecases/restore_task_usecase.dart';
+import '../../domain/usecases/permanently_delete_task_usecase.dart';
 import 'task_list_state.dart';
 
 class TaskListController extends ChangeNotifier {
@@ -17,6 +21,10 @@ class TaskListController extends ChangeNotifier {
   final UpdateTaskUseCase updateTaskUseCase;
   final ChangeTaskStatusUseCase changeTaskStatusUseCase;
   final DeleteTaskUseCase deleteTaskUseCase;
+  final ReassignTaskUseCase reassignTaskUseCase;
+  final UndoTaskStatusUseCase undoTaskStatusUseCase;
+  final RestoreTaskUseCase restoreTaskUseCase;
+  final PermanentlyDeleteTaskUseCase permanentlyDeleteTaskUseCase;
 
   TaskListController({
     required this.watchTasksUseCase,
@@ -24,6 +32,10 @@ class TaskListController extends ChangeNotifier {
     required this.updateTaskUseCase,
     required this.changeTaskStatusUseCase,
     required this.deleteTaskUseCase,
+    required this.reassignTaskUseCase,
+    required this.undoTaskStatusUseCase,
+    required this.restoreTaskUseCase,
+    required this.permanentlyDeleteTaskUseCase,
   });
 
   StreamSubscription<List<TaskEntity>>? _subscription;
@@ -69,6 +81,10 @@ class TaskListController extends ChangeNotifier {
       changeTaskStatusUseCase(id, status, changedBy: changedBy);
 
   Future<void> deleteTask(int id) => deleteTaskUseCase(id);
+  Future<void> reassignTask(int id, int? userId, {int? changedBy}) => reassignTaskUseCase(id, userId, changedBy: changedBy);
+  Future<void> undoStatus(int id, {int? changedBy}) => undoTaskStatusUseCase(id, changedBy: changedBy);
+  Future<void> restoreTask(int id) => restoreTaskUseCase(id);
+  Future<void> permanentlyDeleteTask(int id) => permanentlyDeleteTaskUseCase(id);
 
   void updateSearch(String value) { query = value; loadTasks(); }
   void updateStatus(String? value) { selectedStatus = value; loadTasks(); }
