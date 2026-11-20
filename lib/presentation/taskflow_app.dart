@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../core/error/error_mapper.dart';
 import 'screens.dart';
 
 class TaskFlowApp extends StatelessWidget {
@@ -42,4 +44,9 @@ Future<String?> askText(BuildContext context, String title, {String initial = ''
     actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Отмена')), FilledButton(onPressed: () => Navigator.pop(ctx, c.text), child: const Text('Сохранить'))],
   ));
 }
-void showError(BuildContext context, Object e) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))));
+void showError(BuildContext context, Object error) {
+  final message = ErrorMapper.toFailure(error).message;
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text(message)),
+  );
+}
