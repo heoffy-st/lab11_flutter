@@ -206,7 +206,7 @@ class TaskCard extends StatelessWidget {
     final statusNames = {'todo':'Ожидает','inProgress':'В работе','done':'Готово','cancelled':'Отменено'};
     final priorityNames = {'low':'Низкий','medium':'Средний','high':'Высокий','critical':'Критический'};
     return Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(children: [Expanded(child: Text(task.title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold))), PopupMenuButton<String>(onSelected: (v) async { try { if (v == 'delete') { await taskController.deleteTask(task.id); } else if (v == 'undo') { final users = await repo.watchUsers().first; await repo.undoStatus(task.id, changedBy: users.isEmpty ? null : users.first.id); } else if (v == 'comments') { if (context.mounted) showTaskDetails(context, task); } else if (v == 'edit') { if (context.mounted) editTaskDialog(context, task); } else if (v == 'assign') { if (context.mounted) reassignTaskDialog(context, task); } } catch (e) { if (context.mounted) showError(context, e); } }, itemBuilder: (_) => const [PopupMenuItem(value:'edit', child: Text('Редактировать')), PopupMenuItem(value:'assign', child: Text('Назначить исполнителя')), PopupMenuItem(value:'comments', child: Text('Комментарии и история')), PopupMenuItem(value:'undo', child: Text('Отменить статус')), PopupMenuItem(value:'delete', child: Text('В корзину'))])]),
+      Row(children: [Expanded(child: Text(task.title, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold))), PopupMenuButton<String>(onSelected: (v) async { try { if (v == 'delete') { await taskController.deleteTask(task.id); } else if (v == 'undo') { final users = await repo.watchUsers().first; await taskController.undoStatus(task.id, changedBy: users.isEmpty ? null : users.first.id); } else if (v == 'comments') { if (context.mounted) showTaskDetails(context, task); } else if (v == 'edit') { if (context.mounted) editTaskDialog(context, task); } else if (v == 'assign') { if (context.mounted) reassignTaskDialog(context, task); } } catch (e) { if (context.mounted) showError(context, e); } }, itemBuilder: (_) => const [PopupMenuItem(value:'edit', child: Text('Редактировать')), PopupMenuItem(value:'assign', child: Text('Назначить исполнителя')), PopupMenuItem(value:'comments', child: Text('Комментарии и история')), PopupMenuItem(value:'undo', child: Text('Отменить статус')), PopupMenuItem(value:'delete', child: Text('В корзину'))])]),
       if (task.description.isNotEmpty) Padding(padding: const EdgeInsets.only(top: 4), child: Text(task.description, maxLines: 2, overflow: TextOverflow.ellipsis)),
       const SizedBox(height: 8),
       Wrap(spacing: 8, runSpacing: 6, children: [
@@ -523,6 +523,7 @@ Future<void> showUserTasks(BuildContext context, User user) async {
 
 Future<void> reassignTaskDialog(BuildContext context, Task task) async {
   final repo=context.read<TaskRepository>();
+  final taskController=context.read<TaskListController>();
   final members=await repo.projectMembers(task.projectId);
   final allUsers=await repo.watchUsers().first;
   final memberIds=members.map((m)=>m['id'] as int).toSet();
@@ -532,7 +533,7 @@ Future<void> reassignTaskDialog(BuildContext context, Task task) async {
   await showDialog(context:context,builder:(ctx)=>StatefulBuilder(builder:(ctx,set)=>AlertDialog(title:const Text('Назначить исполнителя'),content:Column(mainAxisSize:MainAxisSize.min,children:[
     OutlinedButton.icon(onPressed:() async {final id=await chooseUser(ctx,available,title:'Выберите исполнителя',selectedId:selected);if(id!=null)set(()=>selected=id);},icon:const Icon(Icons.person_search),label:Text(selected==null?'Не назначен':available.firstWhere((u)=>u.id==selected).name)),
     TextButton(onPressed:()=>set(()=>selected=null),child:const Text('Снять назначение')),
-  ]),actions:[TextButton(onPressed:()=>Navigator.pop(ctx),child:const Text('Отмена')),FilledButton(onPressed:()async{try{await repo.reassignTask(task.id,selected,changedBy:allUsers.isEmpty?null:allUsers.first.id);if(ctx.mounted)Navigator.pop(ctx);}catch(e){if(ctx.mounted)showError(ctx,e);}},child:const Text('Сохранить'))])));
+  ]),actions:[TextButton(onPressed:()=>Navigator.pop(ctx),child:const Text('Отмена')),FilledButton(onPressed:()async{try{await taskController.reassignTask(task.id,selected,changedBy:allUsers.isEmpty?null:allUsers.first.id);if(ctx.mounted)Navigator.pop(ctx);}catch(e){if(ctx.mounted)showError(ctx,e);}},child:const Text('Сохранить'))])));
 }
 
 Future<void> editProjectDialog(BuildContext context, Project project) async {
