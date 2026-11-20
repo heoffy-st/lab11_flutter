@@ -45,4 +45,29 @@ class TaskRepositoryImpl implements TaskRepository {
     try { await localDataSource.softDeleteTask(id); }
     catch (error) { throw ErrorMapper.toFailure(error); }
   }
+
+  @override
+  Future<void> reassignTask(int taskId, int? userId, {int? changedBy}) async {
+    try { await localDataSource.reassignTask(taskId, userId, changedBy: changedBy); }
+    catch (error) { throw ErrorMapper.toFailure(error); }
+  }
+
+  @override
+  Future<void> undoStatus(int taskId, {int? changedBy}) async {
+    try { await localDataSource.undoStatus(taskId, changedBy: changedBy); }
+    catch (error) { throw ErrorMapper.toFailure(error); }
+  }
+
+  @override
+  Future<void> restoreTask(int id) async {
+    try { await localDataSource.restoreTask(id); }
+    catch (error) { throw ErrorMapper.toFailure(error); }
+  }
+
+  @override
+  Future<void> permanentlyDeleteTask(int id) async {
+    try { await localDataSource.permanentlyDeleteTask(id); }
+    catch (error) { throw ErrorMapper.toFailure(error); }
+  }
+
 }
