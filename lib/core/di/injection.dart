@@ -11,6 +11,10 @@ import '../../src/domain/usecases/create_task_usecase.dart';
 import '../../src/domain/usecases/update_task_usecase.dart';
 import '../../src/domain/usecases/change_task_status_usecase.dart';
 import '../../src/domain/usecases/delete_task_usecase.dart';
+import '../../src/domain/usecases/reassign_task_usecase.dart';
+import '../../src/domain/usecases/undo_task_status_usecase.dart';
+import '../../src/domain/usecases/restore_task_usecase.dart';
+import '../../src/domain/usecases/permanently_delete_task_usecase.dart';
 import '../../src/presentation/providers/task_list_controller.dart';
 
 List<SingleChildWidget> createAppProviders(AppDatabase database) {
@@ -21,6 +25,10 @@ List<SingleChildWidget> createAppProviders(AppDatabase database) {
   final updateTask = UpdateTaskUseCase(taskRepository);
   final changeStatus = ChangeTaskStatusUseCase(taskRepository);
   final deleteTask = DeleteTaskUseCase(taskRepository);
+  final reassignTask = ReassignTaskUseCase(taskRepository);
+  final undoStatus = UndoTaskStatusUseCase(taskRepository);
+  final restoreTask = RestoreTaskUseCase(taskRepository);
+  final permanentlyDeleteTask = PermanentlyDeleteTaskUseCase(taskRepository);
 
   return [
     Provider<AppDatabase>(create: (_) => database, dispose: (_, db) => db.close()),
@@ -30,6 +38,10 @@ List<SingleChildWidget> createAppProviders(AppDatabase database) {
     Provider<UpdateTaskUseCase>.value(value: updateTask),
     Provider<ChangeTaskStatusUseCase>.value(value: changeStatus),
     Provider<DeleteTaskUseCase>.value(value: deleteTask),
+    Provider<ReassignTaskUseCase>.value(value: reassignTask),
+    Provider<UndoTaskStatusUseCase>.value(value: undoStatus),
+    Provider<RestoreTaskUseCase>.value(value: restoreTask),
+    Provider<PermanentlyDeleteTaskUseCase>.value(value: permanentlyDeleteTask),
     ChangeNotifierProvider<TaskListController>(
       create: (_) => TaskListController(
         watchTasksUseCase: watchTasks,
@@ -37,6 +49,10 @@ List<SingleChildWidget> createAppProviders(AppDatabase database) {
         updateTaskUseCase: updateTask,
         changeTaskStatusUseCase: changeStatus,
         deleteTaskUseCase: deleteTask,
+        reassignTaskUseCase: reassignTask,
+        undoTaskStatusUseCase: undoStatus,
+        restoreTaskUseCase: restoreTask,
+        permanentlyDeleteTaskUseCase: permanentlyDeleteTask,
       )..start(),
     ),
     Provider<TaskRepository>(create: (_) => TaskRepository(database)),
