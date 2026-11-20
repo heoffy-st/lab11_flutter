@@ -29,6 +29,14 @@ void main() {
       expect(failure.message, isNot(contains('SQL constraint')));
     });
 
+    test('maps unknown local storage errors to database failures', () {
+      expect(ErrorMapper.toDataFailure(Exception('sqlite internals')), isA<DatabaseFailure>());
+    });
+
+    test('keeps validation errors distinct in the data layer', () {
+      expect(ErrorMapper.toDataFailure(StateError('invalid operation')), isA<ValidationFailure>());
+    });
+
     test('maps database errors', () {
       expect(
         ErrorMapper.toFailure(const DatabaseException()),
