@@ -18,7 +18,7 @@ class TaskRepositoryImpl implements TaskRepository {
       assigneeId: assigneeId, query: query, trash: trash,
       sortByDeadline: sortByDeadline, limit: limit, offset: offset,
     ).map((models) => models.map((model) => model.toEntity()).toList())
-      .handleError((Object error) { throw ErrorMapper.toFailure(error); });
+      .handleError((Object error) { throw ErrorMapper.toDataFailure(error); });
   }
 
   @override
