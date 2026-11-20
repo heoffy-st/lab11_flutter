@@ -54,6 +54,9 @@ class TaskListController extends ChangeNotifier {
 
   void start() => loadTasks();
 
+  Stream<List<TaskEntity>> watchTrashTasks() =>
+      watchTasksUseCase(trash: true, limit: 1000);
+
   void loadTasks() {
     _searchTimer?.cancel();
     _subscription?.cancel();
