@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import '../../../core/error/failures.dart';
+
 import '../../domain/entities/task_entity.dart';
 import '../../domain/usecases/watch_tasks_usecase.dart';
 import 'task_list_state.dart';
@@ -47,7 +49,9 @@ class TaskListController extends ChangeNotifier {
       },
       onError: (Object error) {
         status = TaskListStatus.error;
-        errorMessage = 'Не удалось загрузить задачи. Попробуйте ещё раз.';
+        errorMessage = error is Failure
+            ? error.message
+            : 'Не удалось загрузить задачи. Попробуйте ещё раз.';
         notifyListeners();
       },
     );
