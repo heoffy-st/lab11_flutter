@@ -15,7 +15,10 @@ class ErrorMapper {
       return const UnauthorizedFailure();
     }
     if (error is ServerException) {
-      return const ServerFailure();
+      if (error.statusCode == 401) return const UnauthorizedFailure();
+      if (error.statusCode == 400) return const ValidationFailure();
+      if (error.statusCode >= 500) return const ServerFailure();
+      return const UnknownFailure();
     }
     if (error is ValidationException) {
       return ValidationFailure(error.message);
@@ -24,7 +27,7 @@ class ErrorMapper {
       return const ValidationFailure();
     }
     if (error is DatabaseException) {
-      return DatabaseFailure(error.message);
+      return const DatabaseFailure();
     }
     if (error is UnexpectedException) {
       return const UnknownFailure();
@@ -44,7 +47,8 @@ class ErrorMapper {
         error is TimeoutException ||
         error is ServerException ||
         error is UnauthorizedException ||
-        error is ValidationException) {
+        error is ValidationException ||
+        error is UnexpectedException) {
       return toFailure(error);
     }
     if (error is DatabaseException) return toFailure(error);
