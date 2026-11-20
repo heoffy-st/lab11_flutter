@@ -12,8 +12,10 @@ void main() {
       expect(ErrorMapper.toFailure(TimeoutException('timeout')), isA<NetworkFailure>());
     });
 
-    test('maps server errors', () {
+    test('maps HTTP status codes to the required failures', () {
       expect(ErrorMapper.toFailure(const ServerException(500)), isA<ServerFailure>());
+      expect(ErrorMapper.toFailure(const ServerException(401)), isA<UnauthorizedFailure>());
+      expect(ErrorMapper.toFailure(const ServerException(400)), isA<ValidationFailure>());
     });
 
     test('maps authorization errors', () {
