@@ -1,3 +1,4 @@
+import '../../../core/error/error_mapper.dart';
 import '../../domain/entities/task_entity.dart';
 import '../../domain/repositories/task_repository.dart';
 import '../datasources/task_local_data_source.dart';
@@ -31,6 +32,9 @@ class TaskRepositoryImpl implements TaskRepository {
           limit: limit,
           offset: offset,
         )
-        .map((models) => models.map((model) => model.toEntity()).toList());
+        .map((models) => models.map((model) => model.toEntity()).toList())
+        .handleError((Object error) {
+          throw ErrorMapper.toFailure(error);
+        });
   }
 }
