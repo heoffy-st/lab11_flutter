@@ -46,7 +46,9 @@ Future<String?> askText(BuildContext context, String title, {String initial = ''
   ));
 }
 void showError(BuildContext context, Object error) {
-  final message = ErrorMapper.toFailure(error).message;
+  final message = error is String
+      ? error
+      : ErrorMapper.toFailure(error).message;
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(content: Text(message)),
   );
