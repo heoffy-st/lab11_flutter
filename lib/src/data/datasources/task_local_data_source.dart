@@ -29,6 +29,60 @@ abstract class TaskLocalDataSource {
   Future<void> updateTask(int id, {required String title, required String description, required String priority, int? deadline});
   Future<void> changeStatus(int taskId, String next, {int? changedBy});
   Future<void> softDeleteTask(int id);
+  Future<void> reassignTask(int taskId, int? userId, {int? changedBy});
+  Future<void> undoStatus(int taskId, {int? changedBy});
+  Future<void> restoreTask(int id);
+  Future<void> permanentlyDeleteTask(int id);
+
+  @override
+  Future<void> reassignTask(int taskId, int? userId, {int? changedBy}) async {
+    await database.transaction(() async {
+      final task = await (database.select(database.tasks)..where((t) => t.id.equals(taskId))).getSingle();
+      if (userId != null) {
+        final member = await (database.select(database.projectMembers)..where((m) => m.projectId.equals(task.projectId) & m.userId.equals(userId))).getSingleOrNull();
+        if (member == null) throw StateError('Исполнитель не состоит в проекте');
+      }
+      final now = _now();
+      await (database.update(database.tasks)..where((t) => t.id.equals(taskId))).write(TasksCompanion(assigneeId: Value(userId), updatedAt: Value(now)));
+      await database.into(database.taskHistory).insert(TaskHistoryCompanion.insert(
+        taskId: taskId, previousStatus: Value(task.status), newStatus: task.status,
+        changedBy: Value(changedBy), changedAt: now,
+        details: Value('Исполнитель изменён: ${userId ?? "не назначен"}'),
+      ));
+    });
+  }
+
+  @override
+  Future<void> undoStatus(int taskId, {int? changedBy}) async {
+    await database.transaction(() async {
+      final history = await (database.select(database.taskHistory)
+        ..where((h) => h.taskId.equals(taskId) & h.previousStatus.isNotNull() & h.details.equals(''))
+        ..orderBy([(h) => OrderingTerm.desc(h.changedAt)])
+        ..limit(1)).getSingleOrNull();
+      if (history == null || history.previousStatus == null) throw StateError('Нет изменений для отмены');
+      final current = await (database.select(database.tasks)..where((t) => t.id.equals(taskId))).getSingle();
+      final now = _now();
+      await (database.update(database.taskHistory)..where((h) => h.id.equals(history.id))).write(const TaskHistoryCompanion(details: Value('undone')));
+      await (database.update(database.tasks)..where((t) => t.id.equals(taskId))).write(TasksCompanion(status: Value(history.previousStatus!), updatedAt: Value(now)));
+      await database.into(database.taskHistory).insert(TaskHistoryCompanion.insert(
+        taskId: taskId, previousStatus: Value(current.status), newStatus: history.previousStatus!,
+        changedBy: Value(changedBy), changedAt: now, details: const Value('Отмена последнего изменения'),
+      ));
+    });
+  }
+
+  @override
+  Future<void> restoreTask(int id) async {
+    await (database.update(database.tasks)..where((t) => t.id.equals(id))).write(
+      TasksCompanion(deletedAt: const Value(null), updatedAt: Value(_now())),
+    );
+  }
+
+  @override
+  Future<void> permanentlyDeleteTask(int id) async {
+    await (database.delete(database.tasks)..where((t) => t.id.equals(id))).go();
+  }
+
 }
 
 class TaskLocalDataSourceImpl implements TaskLocalDataSource {
