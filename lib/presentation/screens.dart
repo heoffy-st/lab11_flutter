@@ -450,7 +450,8 @@ class TrashScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final repo=context.read<TaskRepository>();
-    return StreamBuilder<List<Task>>(stream:repo.watchTasks(trash:true),builder:(ctx,s){if(!s.hasData)return const Center(child:CircularProgressIndicator());if(s.data!.isEmpty)return const Center(child:Text('Корзина пуста'));return ListView(children:s.data!.map((t)=>Card(child:ListTile(title:Text(t.title),subtitle:Text(t.description),trailing:Wrap(children:[IconButton(tooltip:'Восстановить',icon:const Icon(Icons.restore),onPressed:()=>repo.restoreTask(t.id)),IconButton(tooltip:'Удалить навсегда',icon:const Icon(Icons.delete_forever),onPressed:()=>repo.permanentlyDeleteTask(t.id))])))).toList());});
+    final controller=context.read<TaskListController>();
+    return StreamBuilder<List<Task>>(stream:repo.watchTasks(trash:true),builder:(ctx,s){if(!s.hasData)return const Center(child:CircularProgressIndicator());if(s.data!.isEmpty)return const Center(child:Text('Корзина пуста'));return ListView(children:s.data!.map((t)=>Card(child:ListTile(title:Text(t.title),subtitle:Text(t.description),trailing:Wrap(children:[IconButton(tooltip:'Восстановить',icon:const Icon(Icons.restore),onPressed:()async{try{await controller.restoreTask(t.id);}catch(e){if(ctx.mounted)showError(ctx,e);}}),IconButton(tooltip:'Удалить навсегда',icon:const Icon(Icons.delete_forever),onPressed:()async{try{await controller.permanentlyDeleteTask(t.id);}catch(e){if(ctx.mounted)showError(ctx,e);}})])))).toList());});
   }
 }
 
