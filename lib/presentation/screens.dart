@@ -7,39 +7,190 @@ import 'taskflow_app.dart';
 
 class TasksScreen extends StatefulWidget {
   const TasksScreen({super.key});
+
   @override
   State<TasksScreen> createState() => _TasksScreenState();
 }
+
 class _TasksScreenState extends State<TasksScreen> {
-  String search = '';
-  String? status;
-  String? priority;
-  int? assignee;
-  bool sortDeadline = false;
-  int pageLimit = 30;
   @override
   Widget build(BuildContext context) {
+    final controller = context.watch<TaskListController>();
     final repo = context.read<TaskRepository>();
-    return Column(children: [
-      Padding(padding: const EdgeInsets.fromLTRB(16, 12, 16, 4), child: TextField(decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'Поиск задач...', border: OutlineInputBorder()), onChanged: (v) => setState(() { search = v; pageLimit = 30; }))),
-      Padding(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), child: Row(children: [
-        Expanded(child: DropdownButtonFormField<String?>(initialValue: status, decoration: const InputDecoration(labelText: 'Статус', border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8)), items: const [DropdownMenuItem(value: null, child: Text('Все')), DropdownMenuItem(value: 'todo', child: Text('Ожидает')), DropdownMenuItem(value: 'inProgress', child: Text('В работе')), DropdownMenuItem(value: 'done', child: Text('Готово')), DropdownMenuItem(value: 'cancelled', child: Text('Отменено'))], onChanged: (v) => setState(() { status = v; pageLimit = 30; }))),
-        const SizedBox(width: 8),
-        Expanded(child: DropdownButtonFormField<String?>(initialValue: priority, decoration: const InputDecoration(labelText: 'Приоритет', border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8)), items: const [DropdownMenuItem(value: null, child: Text('Все')), DropdownMenuItem(value: 'low', child: Text('Низкий')), DropdownMenuItem(value: 'medium', child: Text('Средний')), DropdownMenuItem(value: 'high', child: Text('Высокий')), DropdownMenuItem(value: 'critical', child: Text('Критический'))], onChanged: (v) => setState(() { priority = v; pageLimit = 30; }))),
-      ])),
-      Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: Row(children: [
-        Expanded(child: StreamBuilder<List<User>>(stream: repo.watchUsers(), builder: (ctx, users) => DropdownButtonFormField<int?>(initialValue: assignee, isExpanded: true, decoration: const InputDecoration(labelText: 'Исполнитель', border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 8)), items: [const DropdownMenuItem<int?>(value: null, child: Text('Все исполнители')), ...(users.data ?? []).map((u) => DropdownMenuItem<int?>(value: u.id, child: Text(u.name)))], onChanged: (v) => setState(() { assignee = v; pageLimit = 30; })))),
-        const SizedBox(width: 8),
-        IconButton(tooltip: sortDeadline ? 'Сначала дедлайн' : 'Сначала новые', onPressed: () => setState(() => sortDeadline = !sortDeadline), icon: Icon(sortDeadline ? Icons.event : Icons.schedule)),
-      ])),
-      Expanded(child: StreamBuilder<List<Task>>(stream: repo.watchTasks(status: status, priority: priority, assigneeId: assignee, query: search, sortByDeadline: sortDeadline, limit: pageLimit), builder: (context, snap) {
-        if (!snap.hasData) return const Center(child: CircularProgressIndicator());
-        final tasks = snap.data!;
-        if (tasks.isEmpty) return const Center(child: Text('Задач пока нет. Создайте первую задачу.'));
-        return ListView.builder(padding: const EdgeInsets.fromLTRB(12, 0, 12, 88), itemCount: tasks.length + (tasks.length == pageLimit ? 1 : 0), itemBuilder: (context, i) { if (i == tasks.length) return TextButton(onPressed: () => setState(() => pageLimit += 30), child: const Text('Загрузить ещё')); return TaskCard(task: tasks[i]); });
-      })),
-      Align(alignment: Alignment.centerRight, child: Padding(padding: const EdgeInsets.all(16), child: FloatingActionButton.extended(onPressed: () => createTaskDialog(context), icon: const Icon(Icons.add), label: const Text('Новая задача')))),
-    ]);
+
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: TextField(
+            decoration: const InputDecoration(
+              prefixIcon: Icon(Icons.search),
+              hintText: 'Поиск задач...',
+              border: OutlineInputBorder(),
+            ),
+            onChanged: controller.updateSearch,
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: DropdownButtonFormField<String?>(
+                  initialValue: controller.selectedStatus,
+                  decoration: const InputDecoration(
+                    labelText: 'Статус',
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 8),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: null, child: Text('Все')),
+                    DropdownMenuItem(value: 'todo', child: Text('Ожидает')),
+                    DropdownMenuItem(value: 'inProgress', child: Text('В работе')),
+                    DropdownMenuItem(value: 'done', child: Text('Готово')),
+                    DropdownMenuItem(value: 'cancelled', child: Text('Отменено')),
+                  ],
+                  onChanged: controller.updateStatus,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: DropdownButtonFormField<String?>(
+                  initialValue: controller.selectedPriority,
+                  decoration: const InputDecoration(
+                    labelText: 'Приоритет',
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 8),
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: null, child: Text('Все')),
+                    DropdownMenuItem(value: 'low', child: Text('Низкий')),
+                    DropdownMenuItem(value: 'medium', child: Text('Средний')),
+                    DropdownMenuItem(value: 'high', child: Text('Высокий')),
+                    DropdownMenuItem(value: 'critical', child: Text('Критический')),
+                  ],
+                  onChanged: controller.updatePriority,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: [
+              Expanded(
+                child: StreamBuilder<List<User>>(
+                  stream: repo.watchUsers(),
+                  builder: (ctx, users) => DropdownButtonFormField<int?>(
+                    initialValue: controller.selectedAssignee,
+                    isExpanded: true,
+                    decoration: const InputDecoration(
+                      labelText: 'Исполнитель',
+                      border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 8),
+                    ),
+                    items: [
+                      const DropdownMenuItem<int?>(
+                        value: null,
+                        child: Text('Все исполнители'),
+                      ),
+                      ...(users.data ?? []).map(
+                        (u) => DropdownMenuItem<int?>(
+                          value: u.id,
+                          child: Text(u.name),
+                        ),
+                      ),
+                    ],
+                    onChanged: controller.updateAssignee,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                tooltip: controller.sortByDeadline
+                    ? 'Сначала дедлайн'
+                    : 'Сначала новые',
+                onPressed: controller.toggleSort,
+                icon: Icon(
+                  controller.sortByDeadline ? Icons.event : Icons.schedule,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: _buildTaskList(controller),
+        ),
+        Align(
+          alignment: Alignment.centerRight,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: FloatingActionButton.extended(
+              onPressed: () => createTaskDialog(context),
+              icon: const Icon(Icons.add),
+              label: const Text('Новая задача'),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTaskList(TaskListController controller) {
+    switch (controller.status) {
+      case TaskListStatus.initial:
+      case TaskListStatus.loading:
+        return const Center(child: CircularProgressIndicator());
+      case TaskListStatus.error:
+        return Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(controller.errorMessage ?? 'Произошла ошибка'),
+              const SizedBox(height: 8),
+              FilledButton(
+                onPressed: controller.loadTasks,
+                child: const Text('Повторить'),
+              ),
+            ],
+          ),
+        );
+      case TaskListStatus.empty:
+        return const Center(
+          child: Text('Задач пока нет. Создайте первую задачу.'),
+        );
+      case TaskListStatus.success:
+        final tasks = controller.tasks;
+        return ListView.builder(
+          padding: const EdgeInsets.fromLTRB(12, 0, 12, 88),
+          itemCount: tasks.length + (tasks.length == controller.limit ? 1 : 0),
+          itemBuilder: (context, index) {
+            if (index == tasks.length) {
+              return TextButton(
+                onPressed: controller.loadMore,
+                child: const Text('Загрузить ещё'),
+              );
+            }
+            final item = tasks[index];
+            return TaskCard(
+              task: Task(
+                id: item.id,
+                title: item.title,
+                description: item.description,
+                projectId: item.projectId,
+                assigneeId: item.assigneeId,
+                priority: item.priority,
+                status: item.status,
+                deadline: item.deadline,
+                createdAt: item.createdAt,
+                updatedAt: item.updatedAt,
+                deletedAt: item.deletedAt,
+              ),
+            );
+          },
+        );
+    }
   }
 }
 
