@@ -31,4 +31,23 @@ class ErrorMapper {
     }
     return const UnknownFailure();
   }
+
+  /// Maps failures raised by the SQLite/Drift data source.
+  /// Validation errors keep their meaning; unexpected storage errors are
+  /// exposed as a safe database failure rather than a raw exception.
+  static Failure toDataFailure(Object error) {
+    if (error is ArgumentError ||
+        error is FormatException ||
+        error is StateError ||
+        error is Failure ||
+        error is NetworkException ||
+        error is TimeoutException ||
+        error is ServerException ||
+        error is UnauthorizedException ||
+        error is ValidationException) {
+      return toFailure(error);
+    }
+    if (error is DatabaseException) return toFailure(error);
+    return const DatabaseFailure();
+  }
 }
